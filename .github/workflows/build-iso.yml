@@ -26,13 +26,13 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create Build Configuration
-              run: |
-                cat <<EOF > config.toml
-                [[customizations.user]]
-                name = "admin"
-                key = "${{ secrets.SSH_PUBLIC_KEY }}"
-                groups = ["wheel"]
-                EOF
+        run: |
+          cat <<EOF > config.toml
+          [[customizations.user]]
+          name = "admin"
+          key = "${{ secrets.SSH_PUBLIC_KEY }}"
+          groups = ["wheel"]
+          EOF
 
       - name: Build ISO with bootc-image-builder
         uses: osbuild/bootc-image-builder-action@v1
