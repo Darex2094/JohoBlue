@@ -35,7 +35,7 @@ jobs:
           EOF
 
       - name: Build ISO with bootc-image-builder
-        uses: osbuild/bootc-image-builder-action@v1
+        uses: osbuild/bootc-image-builder-action@v0.0.2
         with:
           image: ghcr.io/darex2094/johoblue:latest
           config-file: config.toml
