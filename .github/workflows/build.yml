@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-  # Allows manual triggering from the website
   workflow_dispatch:
 
 jobs:
@@ -12,14 +11,17 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      # Needed to push to GHCR
       packages: write
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # Using Buildah because it handles metadata better than Docker
+      # NEW STEP: Convert Darex2094 to darex2094
+      - name: Normalize Owner Case
+        run: |
+          echo "REGISTRY_OWNER=${GITHUB_REPOSITORY_OWNER,,}" >> ${GITHUB_ENV}
+
       - name: Build Image
         id: build-image
         uses: redhat-actions/buildah-build@v2
@@ -29,7 +31,6 @@ jobs:
           containerfiles: |
             ./Containerfile
 
-      # Authenticate with GitHub Container Registry (GHCR)
       - name: Log in to GHCR
         uses: redhat-actions/podman-login@v1
         with:
@@ -37,10 +38,10 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Push the image to your registry
       - name: Push Image
         uses: redhat-actions/push-to-registry@v2
         with:
           image: ${{ steps.build-image.outputs.image }}
           tags: ${{ steps.build-image.outputs.tags }}
-          registry: ghcr.io/${{ github.repository_owner }}
+          # UDPATED: Uses the lowercase env variable we created above
+          registry: ghcr.io/${{ env.REGISTRY_OWNER }}
