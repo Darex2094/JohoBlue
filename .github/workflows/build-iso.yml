@@ -1,0 +1,42 @@
+name: Build ISO
+
+on:
+  workflow_dispatch: 
+  # Manual trigger only
+
+jobs:
+  build-iso:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+      # Needed to pull an image
+
+    steps:
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+
+      - name: Podman Login
+        uses: redhat-actions/podman-login@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build ISO with bootc-image-builder
+        uses: redhat-actions/bootc-image-builder@v1
+        with:
+          image: ghcr.io/darex2094/johoblue:latest
+          output-type: anaconda-iso
+          root-ssh-authorized-keys: ${{ secrets.SSH_PUBLIC_KEY }}
+
+      - name: Upload ISO
+        uses: actions/upload-artifact@v4
+        with:
+          name: johoblue-iso
+          path: output/bootiso/install.iso
+          if-no-files-found: error
+          compression-level: 0 
+          # ISOs don't compress well, might as well save time
