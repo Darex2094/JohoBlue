@@ -7,29 +7,38 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-image:
+  build-matrix:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [base]
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # NEW STEP: Convert Darex2094 to darex2094
+      # Convert display name case to lowercase for the registry
       - name: Normalize Owner Case
         run: |
           echo "REGISTRY_OWNER=${GITHUB_REPOSITORY_OWNER,,}" >> ${GITHUB_ENV}
+      
+      - name: Free Disk Space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
 
-      - name: Build Image
+      - name: Build Image (${{ matrix.variant }})
         id: build-image
         uses: redhat-actions/buildah-build@v2
         with:
-          image: johoblue
+          image: johoblue-${{ matrix.variant }}
           tags: latest ${{ github.sha }}
           containerfiles: |
-            ./Containerfile
+            ./${{ matrix.variant }}/Containerfile
 
       - name: Log in to GHCR
         uses: redhat-actions/podman-login@v1
@@ -41,7 +50,7 @@ jobs:
       - name: Push Image
         uses: redhat-actions/push-to-registry@v2
         with:
-          image: ${{ steps.build-image.outputs.image }}
+          image: johoblue-${{ matrix.variant }}
           tags: ${{ steps.build-image.outputs.tags }}
-          # UDPATED: Uses the lowercase env variable we created above
+          # Uses the lowercase env variable we created earlier
           registry: ghcr.io/${{ env.REGISTRY_OWNER }}

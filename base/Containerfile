@@ -1,0 +1,51 @@
+# Base Image: Fedora Kinoite 43
+FROM quay.io/fedora-ostree-desktops/kinoite:43
+
+# Identify OS as JohoBlue
+LABEL "org.opencontainers.image.title"="JohoBlue"
+LABEL "org.opencontainers.image.description"="A Customized Fedora Kinoite 43 Derivative"
+LABEL "org.opencontainers.image.vendor"="JohoBlue Project"
+
+# Kernel Swap
+# We are replacing the Fedora kernel with Sentry's fsync kernel for gaming performance
+RUN dnf5 -y install dnf5-plugins && \
+    dnf5 -y copr enable sentry/kernel-fsync && \
+    rpm-ostree override replace \
+    --experimental \
+    --from repo='copr:copr.fedorainfracloud.org:sentry:kernel-fsync' \
+    kernel kernel-core kernel-modules kernel-modules-core kernel-modules-extra
+
+# Xbox Wireless Adapter Support
+RUN dnf5 -y copr enable sentry/xone && \
+    rpm-ostree install \
+        akmod-xone \
+        xone-kmod-common \
+        # Build dependencies (removed later)
+        gcc \
+        make \
+        kernel-devel \
+        && \
+    # Compile the kernel module for the CURRENTLY installed kernel (fsync)
+    akmods --force --kernels $(rpm -q kernel-core --queryformat '%{VERSION}-%{RELEASE}.%{ARCH}') && \
+    # Cleanup build tools
+    rpm-ostree uninstall gcc make kernel-devel
+
+# Core Package Swap
+# Firefox -> Google Chrome Stable
+# Toolbox -> Distrobox
+# Adding multimedia codecs and power management tools
+RUN rpm-ostree override remove firefox toolbox && \
+    rpm-ostree install \
+        google-chrome-stable \
+        distrobox \
+        tlp \
+        power-profiles-daemon \
+        # Multimedia Codecs (RPMFusion)
+        gstreamer1-plugin-libav \
+        gstreamer1-plugins-bad-free-extras \
+        gstreamer1-plugins-bad-freeworld \
+        gstreamer1-plugins-ugly \
+        gstreamer1-vaapi
+
+# Services
+RUN systemctl enable tlp.service
