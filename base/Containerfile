@@ -20,20 +20,31 @@ RUN rpm-ostree override replace \
     kernel kernel-core kernel-modules kernel-modules-core kernel-modules-extra
 
 # Xbox Wireless Adapter Support
-RUN export AKMODS_DISABLE=1 && \
-        rpm-ostree install \
-        akmod-xone \
-        xone-kmod-common \
-        # Build dependencies (removed later)
-        gcc \
-        make \
-        kernel-devel \
-        && \
-    chmod -R 777 /var/cache/akmods && \
-    # Compile the kernel module for the CURRENTLY installed kernel (fsync)
+# We need to create a shim to stop akmod from autocompiling modules before we manipulate userland
+RUN rpm-ostree install akmods gcc make kernel-devel
+
+RUN mv /usr/bin/akmods /usr/bin/akmods.real && \
+    echo -e '#!/bin/sh\nexit 0' > /usr/bin/akmods && \
+    chmod +x /usr/bin/akmods && \
+    # Install the driver package
+    rpm-ostree install akmod-xone xone-kmod-common && \
+    # Restore the real binary
+    mv /usr/bin/akmods.real /usr/bin/akmods   
+
+# Perform the actual build properly
+RUN chmod -R 777 /var/cache/akmods && \
+    # Build as the 'akmods' user to satisfy security checks
     runuser -u akmods -- akmods --force --kernels $(rpm -q kernel-core --queryformat '%{VERSION}-%{RELEASE}.%{ARCH}') && \
-    # Cleanup build tools
+    # Install the actual kernel module we just built
+    rpm-ostree install /var/cache/akmods/xone/kmod-xone*.rpm && \
+    # Cleanup build dependencies
     rpm-ostree uninstall gcc make kernel-devel
+
+# Add the Chrome and RPMFusion repos
+RUN echo -e "[google-chrome]\nname=google-chrome\nbaseurl=http://dl.google.com/linux/chrome/rpm/stable/x86_64\nenabled=1\ngpgcheck=1\ngpgkey=https://dl.google.com/linux/linux_signing_key.pub" > /etc/yum.repos.d/google-chrome.repo && \
+    rpm-ostree install \
+        https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm \
+        https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
 
 # Core Package Swap
 # Firefox -> Google Chrome Stable
