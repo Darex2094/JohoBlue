@@ -7,17 +7,20 @@ LABEL "org.opencontainers.image.description"="A Customized Fedora Kinoite 43 Der
 LABEL "org.opencontainers.image.vendor"="JohoBlue Project"
 
 # Kernel Swap
-# We are replacing the Fedora kernel with Sentry's fsync kernel for gaming performance
-RUN dnf5 -y install dnf5-plugins && \
-    dnf5 -y copr enable sentry/kernel-fsync && \
-    rpm-ostree override replace \
+# We are replacing the Fedora kernel with Sentry's fsync kernel for gaming performance.
+# Swapped out DNF method for curl method due to API error
+RUN curl -Lo /etc/yum.repos.d/sentry-kernel-fsync.repo \
+    https://copr.fedorainfracloud.org/coprs/sentry/kernel-fsync/repo/fedora-43/sentry-kernel-fsync-fedora-43.repo && \
+    curl -Lo /etc/yum.repos.d/sentry-xone.repo \
+    https://copr.fedorainfracloud.org/coprs/sentry/xone/repo/fedora-43/sentry-xone-fedora-43.repo
+
+RUN rpm-ostree override replace \
     --experimental \
     --from repo='copr:copr.fedorainfracloud.org:sentry:kernel-fsync' \
     kernel kernel-core kernel-modules kernel-modules-core kernel-modules-extra
 
 # Xbox Wireless Adapter Support
-RUN dnf5 -y copr enable sentry/xone && \
-    rpm-ostree install \
+RUN rpm-ostree install \
         akmod-xone \
         xone-kmod-common \
         # Build dependencies (removed later)
