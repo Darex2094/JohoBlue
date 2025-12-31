@@ -28,8 +28,9 @@ RUN rpm-ostree install \
         make \
         kernel-devel \
         && \
+    chmod -R 777 /var/cache/akmods && \
     # Compile the kernel module for the CURRENTLY installed kernel (fsync)
-    akmods --force --kernels $(rpm -q kernel-core --queryformat '%{VERSION}-%{RELEASE}.%{ARCH}') && \
+    runuser -u akmods -- akmods --force --kernels $(rpm -q kernel-core --queryformat '%{VERSION}-%{RELEASE}.%{ARCH}') && \
     # Cleanup build tools
     rpm-ostree uninstall gcc make kernel-devel
 
