@@ -24,7 +24,7 @@ RUN rpm-ostree override replace \
 RUN rpm-ostree install akmods gcc make kernel-devel
 
 RUN mv /usr/sbin/akmods /usr/sbin/akmods.real && \
-    echo -e '#!/bin/sh\nexit 0' > /usr/bin/akmods && \
+    echo -e '#!/bin/sh\nexit 0' > /usr/sbin/akmods && \
     chmod +x /usr/sbin/akmods && \
     # Install the driver package
     rpm-ostree install akmod-xone xone-kmod-common && \
