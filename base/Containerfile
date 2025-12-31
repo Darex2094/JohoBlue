@@ -23,7 +23,7 @@ RUN rpm-ostree override replace \
 # We need to create a shim to stop akmod from autocompiling modules before we manipulate userland
 RUN rpm-ostree install akmods gcc make kernel-devel
 
-RUN mv /usr/sbin/akmods /usr/bin/akmods.real && \
+RUN mv /usr/sbin/akmods /usr/sbin/akmods.real && \
     echo -e '#!/bin/sh\nexit 0' > /usr/bin/akmods && \
     chmod +x /usr/sbin/akmods && \
     # Install the driver package
