@@ -31,8 +31,10 @@ RUN mv /usr/sbin/akmods /usr/sbin/akmods.real && \
 RUN rpm-ostree install akmod-xone xone-kmod-common
 
 # Restore the real binary
-RUN mv /usr/sbin/akmods.real /usr/sbin/akmods && \
-    chmod -R 777 /var/cache/akmods && \
+RUN mv /usr/sbin/akmods.real /usr/sbin/akmods
+
+# Perform the REAL build
+RUN chmod -R 777 /var/cache/akmods && \
     # Build as the 'akmods' user to satisfy security checks
     runuser -u akmods -- akmods --force --kernels $(rpm -q kernel-core --queryformat '%{VERSION}-%{RELEASE}.%{ARCH}') && \
     # Install the actual kernel module we just built
